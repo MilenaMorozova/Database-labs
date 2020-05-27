@@ -1,9 +1,4 @@
-/*CREATE USER non-root WITH PASSWORD '123';
-CREATE DATABASE my_database OWNER non-root;
-GRANT ALL PRIVILEGES ON my_database TO "non-root";
-REVOKE UPDATE, INSERT ON total FROM orders*/
---DROP FUNCTION IF EXISTS create_tables;
-
+------------------------CREATE TABLES-----------------------
 CREATE OR REPLACE FUNCTION create_tables() RETURNS VOID AS $$
 BEGIN
 		CREATE TABLE consumers
@@ -44,8 +39,7 @@ BEGIN
 	CREATE INDEX ON suppliers(address);
 END;
 $$ LANGUAGE plpgsql;
-
---SELECT create_tables();
+--------------------------------------------------------
 -----------------------TRIGGERS-------------------------
 --triggers for update orders.total
 --update details.price
@@ -66,7 +60,7 @@ AFTER UPDATE OF price ON details
 FOR EACH ROW
 EXECUTE PROCEDURE update_total_by_detail_price();
 
---update orders.number_of_details
+--update orders.number_of_details and insert into orders
 CREATE OR REPLACE FUNCTION update_total_by_number_of_details()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -107,8 +101,6 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
---SELECT create_database('mydatabase0123', 'postgres', 'SQL0!');
-
 CREATE OR REPLACE FUNCTION drop_database(name_database TEXT) RETURNS VOID AS $$
 BEGIN
 	IF NOT EXISTS (SELECT FROM pg_database WHERE datname = name_database) THEN
@@ -119,30 +111,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---SELECT drop_database('mydatabase0123');
 ----------------------------SELECTS---------------------------------
 ---------------------------consumers--------------------------------
---DROP FUNCTION IF EXISTS get_consumers;
-
 CREATE OR REPLACE FUNCTION get_consumers() RETURNS SETOF consumers AS $$
 BEGIN
 	RETURN QUERY SELECT * FROM consumers;
 END;
 $$ LANGUAGE plpgsql;
-
---SELECT get_consumers();
 ---------------------------suppliers--------------------------------
---DROP FUNCTION IF EXISTS get_suppliers;
 
 CREATE OR REPLACE FUNCTION get_suppliers() RETURNS SETOF suppliers AS $$
 BEGIN
 	RETURN QUERY SELECT * FROM suppliers;
 END;
 $$ LANGUAGE plpgsql;
-
---SELECT get_suppliers();
 -----------------------------details--------------------------------
---DROP FUNCTION IF EXISTS get_details;
 
 CREATE OR REPLACE FUNCTION get_details() RETURNS SETOF details AS $$
 BEGIN
@@ -150,56 +133,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---SELECT get_details();
 -----------------------------orders--------------------------------
---DROP FUNCTION IF EXISTS get_orders;
 
 CREATE OR REPLACE FUNCTION get_orders() RETURNS SETOF RECORD AS $$
 BEGIN
 	RETURN QUERY SELECT * FROM orders;
 END;
 $$ LANGUAGE plpgsql;
-
---SELECT get_orders();
 -----------------------DELETE FROM TABLES------------------------------
+
 CREATE OR REPLACE FUNCTION clear_table(table_name TEXT) RETURNS VOID AS $$
 BEGIN
 	EXECUTE 'TRUNCATE '|| $1 || ' CASCADE';
 END;
 $$ LANGUAGE plpgsql;
---SELECT clear_table('orders')
---DROP FUNCTION IF EXISTS clear_all_tables;
 
 CREATE OR REPLACE FUNCTION clear_all_tables() RETURNS VOID AS $$
 BEGIN
 	TRUNCATE consumers, suppliers, details, orders;
 END;
 $$ LANGUAGE plpgsql;
---SELECT clear_all_tables()
 --------------------------------------------------------------------
 -------------------INSERT NEW RECORDS-------------------------------
---DROP FUNCTION IF EXISTS insert_into_consumers;
+
 CREATE OR REPLACE FUNCTION insert_into_consumers(VARCHAR(30), TEXT) RETURNS VOID AS $$
 BEGIN
 	INSERT INTO consumers(name, address) VALUES ($1, $2);
 END
 $$ LANGUAGE plpgsql;
 
---DROP FUNCTION IF EXISTS insert_into_suppliers;
+
 CREATE OR REPLACE FUNCTION insert_into_suppliers(VARCHAR(30), TEXT) RETURNS VOID AS $$
 BEGIN
 	INSERT INTO suppliers(sername, address) VALUES($1, $2);
 END
 $$ LANGUAGE plpgsql;
 
---DROP FUNCTION IF EXISTS insert_into_details;
+
 CREATE OR REPLACE FUNCTION insert_into_details(VARCHAR(30), TEXT, INTEGER, INTEGER) RETURNS VOID AS $$
 BEGIN
 	INSERT INTO details(name, storage_address, quantity, price) VALUES($1, $2, $3, $4);
 END
 $$ LANGUAGE plpgsql;
 
---DROP FUNCTION IF EXISTS insert_into_orders;
+
 CREATE OR REPLACE FUNCTION insert_into_orders(INTEGER, INTEGER, INTEGER, INTEGER) RETURNS VOID AS $$
 BEGIN
 	INSERT INTO orders(consumer_id, supplier_id, detail_id, number_of_details) VALUES($1, $2, $3, $4);
@@ -207,14 +184,13 @@ END
 $$ LANGUAGE plpgsql;
 --------------------------------------------------------------------
 -------------------SEARCH RECORDS BY TEXT FIELD---------------------
---DROP FUNCTION IF EXISTS search_consumers_by_address;
+
 CREATE OR REPLACE FUNCTION search_consumers_by_address(TEXT) RETURNS SETOF consumers AS $$
 BEGIN
 	RETURN QUERY SELECT * FROM consumers WHERE address LIKE '%'||$1||'%';
 END
 $$ LANGUAGE plpgsql;
 
---DROP FUNCTION IF EXISTS search_suppliers_by_address;
 CREATE OR REPLACE FUNCTION search_suppliers_by_address(TEXT) RETURNS SETOF suppliers AS $$
 BEGIN
 	RETURN QUERY SELECT * FROM suppliers WHERE address LIKE '%'||$1||'%';
@@ -222,7 +198,7 @@ END
 $$ LANGUAGE plpgsql;
 --------------------------------------------------------------------
 -----------------------UPDATE RECORDS-------------------------------
---DROP FUNCTION IF EXISTS update_consumers;
+
 CREATE OR REPLACE FUNCTION update_consumers(record_id INTEGER, VARCHAR(30), TEXT) RETURNS VOID AS $$
 BEGIN
 	UPDATE consumers
@@ -231,7 +207,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---DROP FUNCTION update_suppliers
+
 CREATE OR REPLACE FUNCTION update_suppliers(record_id INTEGER, VARCHAR(30),TEXT) RETURNS VOID AS $$
 BEGIN
 	UPDATE suppliers
@@ -239,7 +215,7 @@ BEGIN
 	WHERE id = record_id;
 END;
 $$ LANGUAGE plpgsql;
---SELECT update_suppliers(1, 'fgu', 'g')
+
 
 CREATE OR REPLACE FUNCTION update_details(record_id INTEGER, VARCHAR(30), TEXT, INTEGER, INTEGER) RETURNS VOID AS $$
 BEGIN
@@ -248,6 +224,7 @@ BEGIN
 	WHERE id = record_id;
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION update_orders(record_id INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) RETURNS VOID AS $$
 BEGIN
@@ -258,14 +235,14 @@ END;
 $$ LANGUAGE plpgsql;
 --------------------------------------------------------------------------
 -----------------------DELETE BY TEXT FIELD-------------------------------
---DROP FUNCTION IF EXISTS delete_from_consumers_by_address;
+
 CREATE OR REPLACE FUNCTION delete_from_consumers_by_address(TEXT) RETURNS VOID AS $$
 BEGIN
 	DELETE FROM consumers WHERE address LIKE '%'||$1||'%';
 END
 $$ LANGUAGE plpgsql;
 
---DROP FUNCTION IF EXISTS delete_from_suppliers_by_address;
+
 CREATE OR REPLACE FUNCTION delete_from_suppliers_by_address(TEXT) RETURNS VOID AS $$
 BEGIN
 	DELETE FROM suppliers WHERE address LIKE '%'||$1||'%';
@@ -273,7 +250,7 @@ END
 $$ LANGUAGE plpgsql;
 --------------------------------------------------------------------------
 -----------------------DELETE BY TEXT FIELD-------------------------------
---DROP FUNCTION delete_record_from_table
+
 CREATE OR REPLACE FUNCTION delete_record_from_table(record_id INTEGER, table_name TEXT) RETURNS VOID AS $$
 BEGIN
 	EXECUTE 'DELETE FROM '||table_name||' WHERE id = '|| record_id;
