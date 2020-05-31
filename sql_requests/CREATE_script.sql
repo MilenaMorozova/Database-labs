@@ -26,7 +26,6 @@ BEGIN
 
 	CREATE TABLE orders(
 		id SERIAL PRIMARY KEY,
-		date timestamp DEFAULT date_trunc('second', now()),
 		consumer_id INTEGER NOT NULL 
 		REFERENCES consumers (id) ON DELETE CASCADE ON UPDATE CASCADE,
 		supplier_id INTEGER NOT NULL 
@@ -34,7 +33,8 @@ BEGIN
 		detail_id INTEGER NOT NULL 
 		REFERENCES details (id) ON DELETE CASCADE ON UPDATE CASCADE,
 		number_of_details INTEGER NOT NULL CHECK(number_of_details > 0),
-		total BIGINT NOT NULL
+		total BIGINT NOT NULL,
+	    date timestamp DEFAULT date_trunc('second', now())
 	);
 	CREATE INDEX ON consumers(address);
 	CREATE INDEX ON suppliers(address);

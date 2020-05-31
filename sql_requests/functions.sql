@@ -27,6 +27,16 @@ BEGIN
 	RETURN QUERY SELECT * FROM orders;
 END;
 $$ LANGUAGE plpgsql;
+-----------------------get record by id--------------------------------
+CREATE OR REPLACE FUNCTION get_record_by_id(table_name TEXT, record_id integer) RETURNS record AS $$
+DECLARE
+r_Return record;
+BEGIN
+EXECUTE 'SELECT * FROM '|| $1 ||' WHERE id = ' || $2 INTO r_Return;
+
+RETURN r_Return;
+END;
+$$ LANGUAGE plpgsql;
 -----------------------DELETE FROM TABLES------------------------------
 
 CREATE OR REPLACE FUNCTION clear_table(table_name TEXT) RETURNS VOID AS $$
@@ -95,7 +105,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE OR REPLACE FUNCTION update_suppliers(record_id INTEGER, VARCHAR(30),TEXT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION update_suppliers(record_id INTEGER, VARCHAR(30), TEXT) RETURNS VOID AS $$
 BEGIN
 	UPDATE suppliers
 	SET sername = $2, address = $3

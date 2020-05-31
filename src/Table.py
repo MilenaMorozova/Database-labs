@@ -2,40 +2,51 @@ import copy
 
 
 class Table:
-    def __init__(self, name, columns: list,  conn, cursor):
+    def __init__(self, name, columns: list, database):
         self.name = name
         self.columns = columns
-        self.conn = copy.deepcopy(conn)
-        self.cursor = copy.deepcopy(cursor)
+        self.database = database
 
-    def get_table(self) -> list:
-        self.cursor.execute("SELECT get_{}()".format(self.name))
-        result = self.cursor.fetchall()
+    def get_records(self) -> list:
+        self.database.cursor.execute("SELECT * FROM get_{}()".format(self.name))
+        result = self.database.cursor.fetchall()
+        return result
+
+    def get_record_by_id(self, record_id):
+        self.database.cursor.execute("SELECT get_record_by_id('{}', {})".format(self.name, record_id))
+        result = self.database.cursor.fetchall()
         return result
 
     def clear_table(self):
-        self.cursor.execute("SELECT clear_table({})".format(self.name))
-        result = self.cursor.fetchall()
+        print('Функция очистки: ', "SELECT clear_table('{}')".format(self.name))
+        self.database.cursor.execute("SELECT clear_table('{}')".format(self.name))
+        self.database.conn.commit()
 
     def insert(self, *args):
-        self.cursor.execute("SELECT insert_into_{}{}".format(self.name, args))  # ({}).format(*args)
-        result = self.cursor.fetchall()
+        self.database.cursor.execute("SELECT insert_into_{}{}".format(self.name, *args))  # ({}).format(*args)
+        result = self.database.cursor.fetchall()
+        print("Результат инсерта:")
+        print(result)
+        print(1 if result == [('',)] else 0)
+        self.database.conn.commit()
 
     def update_record(self, *args):
-        self.cursor.execute("SELECT update_{}{}".format(self.name, args))
-        result = self.cursor.fetchall()
+        print('Функция обновления: ', "SELECT update_{}{}".format(self.name, *args))
+        self.database.cursor.execute("SELECT update_{}{}".format(self.name, *args))
+        self.database.conn.commit()
 
-    def delete_record(self):
-        self.cursor.execute("SELECT delete_record_from_table({})".format(self.name))
+    def delete_record(self, record_id: int):
+        print('Функция удаления: ', "SELECT delete_record_from_table({}, '{}')".format(record_id, self.name))
+        self.database.cursor.execute("SELECT delete_record_from_table({}, '{}')".format(record_id, self.name))
+        self.database.conn.commit()
 
 
 class TableWithAddition(Table):
-    def __init__(self, name, columns: list,  conn, cursor):
-        super().__init__(name, columns, conn, cursor)
+    def __init__(self, name, columns: list, cursor):
+        super().__init__(name, columns, cursor)
 
     def search_by_address(self, address: str):
-        self.cursor.execute("SELECT search_{}_by_address({})".format(self.name, address))
-        result = self.cursor.fetchall()
+        self.database.cursor.execute("SELECT * FROM search_{}_by_address('{}')".format(self.name, address))
 
     def delete_by_address(self, address: str):
-        self.cursor.execute("SELECT delete_from_{}_by_address({})".format(self.name, address))
+        self.database.cursor.execute("SELECT delete_from_{}_by_address('{}')".format(self.name, address))

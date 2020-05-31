@@ -14,7 +14,7 @@ class UserDB:
         return self.__password__
 
 
-class DatabaseOperations:
+class Database:
     def __init__(self):
         self.data = None
         self.conn = None
@@ -24,6 +24,7 @@ class DatabaseOperations:
         self.my_user = None
 
         self.tables = []
+        self.create_table()
 
     def create_postgres_user(self, username: str, password: str):
         self.postgres_user = UserDB(username, password)
@@ -68,30 +69,32 @@ class DatabaseOperations:
             self.conn.commit()
 
             self.change_connection(self.my_user.username, self.my_user.password, 'orders_db')
-            self.create_tables()
+            self.create_tables_in_db()
 
             self.load_sql_function_from_file("..\\sql_requests\\functions.sql")
             self.load_sql_function_from_file("..\\sql_requests\\triggers.sql")
             self.conn.commit()
             print('SUCCESS')
         except psycopg2.errors.RaiseException as e:
+            self.change_connection(self.my_user.username, self.my_user.password, 'orders_db')
             print(e)
             self.conn.commit()
             return False
 
         return True
 
-    def create_tables(self):
+    def create_tables_in_db(self):
         self.change_connection(self.my_user.username, self.my_user.password, self.my_user.database)
         self.load_sql_function_from_file("..\\sql_requests\\CREATE_script.sql")
         self.cursor.execute("SELECT create_tables()")
         self.conn.commit()
 
-        self.tables = [TableWithAddition('consumers', ['id', 'name', 'address'], self.conn, self.cursor),
-                    TableWithAddition('suppliers', ['id', 'sername', 'address'], self.conn, self.cursor),
-                    Table('details', ['id', 'name', 'storage_address', 'quantity', 'price'], self.conn, self.cursor),
-                    Table('orders', ['id', 'date', 'consumer_id', 'supplier_id', 'detail_id',
-                                     'number_of_details', 'total'], self.conn, self.cursor)]
+    def create_table(self):
+        self.tables = [TableWithAddition('consumers', ['id', 'name', 'address'], self),
+                    TableWithAddition('suppliers', ['id', 'sername', 'address'], self),
+                    Table('details', ['id', 'name', 'storage_address', 'quantity', 'price'],  self),
+                    Table('orders', ['id', 'consumer_id', 'supplier_id', 'detail_id',
+                                     'number_of_details', 'total', 'date'], self)]
 
     def drop_database(self) -> bool:
         try:
@@ -134,7 +137,7 @@ class DatabaseOperations:
 
 
 if __name__ == '__main__':
-    db = DatabaseOperations()
+    db = Database()
     if not db.init_connection('postgres', 'SQL0!'):
         exit(1)
 
