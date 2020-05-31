@@ -16,7 +16,7 @@ class TableView:
         self.scrollbarx = Scrollbar(self.frame_tree_view, orient=HORIZONTAL)
         self.scrollbary = Scrollbar(self.frame_tree_view, orient=VERTICAL)
 
-    def create_tree_views(self):
+    def create_tree_views(self, data: list = None):
         if self.tree:
             self.tree.destroy()
             self.tab.update()
@@ -37,7 +37,8 @@ class TableView:
         for i in range(1, len(self.table.columns)):
             self.tree.column('#' + str(i), stretch=NO, minwidth=150, width=200)
 
-        data = self.table.get_records()
+        if data is None:
+            data = self.table.get_records()
 
         print("Данные таблицы", self.table.name, ':', data)
         if data:
@@ -75,8 +76,8 @@ class TableView:
             self.fill_entries(entry_dict)
 
         def update_tree():
-            function(self.process_data(entry_dict))
-            self.create_tree_views()
+            data = function(self.process_data(entry_dict))
+            self.create_tree_views(data)
 
         button = Button(extra_window, text="OK", width=40,
                         command=lambda: update_tree())
@@ -160,6 +161,9 @@ class TableView:
                                          state='disabled' if self.table.__class__.__name__ == "Table" else 'normal',
                                          command=lambda: self.create_function_window(self.Operations.SEARCH_BY_ADDRESS))
         search_by_address_button.pack(side=LEFT)
+
+        output_all_button = Button(self.frame_buttons, text='Output all', command=lambda: self.create_tree_views())
+        output_all_button.pack(side=LEFT)
 
         self.create_tree_views()
         self.table_control.add(self.tab, text=self.table.name)

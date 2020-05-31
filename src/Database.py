@@ -25,6 +25,7 @@ class Database:
 
         self.tables = []
         self.create_table()
+        self.is_exists = False
 
     def create_postgres_user(self, username: str, password: str):
         self.postgres_user = UserDB(username, password)
@@ -123,8 +124,8 @@ class Database:
             self.conn.close()
 
     def init_connection(self, username: str, password: str) -> bool:
-        if self.postgres_user is not None:
-            return True
+        # if self.postgres_user is not None:
+        #     return True
 
         self.create_postgres_user(username, password)
         if not self.connect_to_database(self.postgres_user.username, self.postgres_user.password):
@@ -132,6 +133,10 @@ class Database:
 
         self.create_user()
         self.upload_function_create_database_to_postgres()
+        self.cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'orders_db'")
+        self.is_exists = True if self.cursor.fetchall() else False
+        if self.is_exists:
+            self.change_connection(self.my_user.username, self.my_user.password, 'orders_db')
         return True
     # TODO сделать общие функции для всех таблиц
 

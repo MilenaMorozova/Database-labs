@@ -11,14 +11,14 @@ class GUI:
         self.main_menu = None
         self.database = Database()
         self.tab_control = None
-        self.tabs = []
+        self.table_views = []
         self.sign_in_button = None
 
     def create_root(self):
         self.root = Tk()
         self.root.title("database")
-        w = 640
-        h = 420
+        w = 700
+        h = 450
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
         x = (sw - w) / 2
@@ -27,21 +27,30 @@ class GUI:
         self.root.resizable(False, False)
 
         self.main_menu = Menu(self.root)
-        self.main_menu.add_command(label='Create database', state='disabled', command=self.create_database)
 
-        self.main_menu.add_command(label='Delete database', state='disabled', command=
-                self.show_fail_of_db_operations(self.database.drop_database, "Database does not exists"))
+        def create_database():
+            self.create_tab_control()
+            self.show_fail_of_db_operations(self.database.create_database(), "Database already exists")
+            if not self.table_views:
+                for i, table in enumerate(self.database.tables):
+                    temp = TableView(table, self.tab_control)
+                    self.table_views.append(temp)
+                    temp.show()
+
+        self.main_menu.add_command(label='Create database', state='disabled', command=create_database)
+
+        def delete_database():
+            self.database.drop_database()
+            self.tab_control.destroy()
+
+        self.main_menu.add_command(label='Delete database', state='disabled', command=delete_database)
+
+        def truncate_all():
+            self.database.truncate_all_tables()
+            for table_view in self.table_views:
+                table_view.create_tree_views()
         self.main_menu.add_command(label='Truncate all tables', state='disabled',
-                                   comman=self.database.truncate_all_tables)
-        # delete_menu = Menu(self.main_menu, tearoff=0)
-        # delete_menu.add_command(label='consumers')
-        # delete_menu.add_command(label='suppliers')
-        # delete_menu.add_command(label='details')
-        # delete_menu.add_command(label='orders')
-        # delete_menu.add_command(label='all tables', command=
-        #     self.show_fail_of_db_operations(self.database.truncate_all_tables, "Database does not exists"))
-
-        # self.main_menu.add_cascade(label='Truncate..', menu=delete_menu, state='disabled')
+                                   comman=truncate_all)
 
         self.root.config(menu=self.main_menu)
         self.sign_in_button = Button(self.root, text='Sign in',
@@ -50,17 +59,10 @@ class GUI:
 
         self.root.protocol('WM_DELETE_WINDOW', lambda:  self.close_root())
 
-    def create_database(self):
-        self.create_tab_control()
-        self.show_fail_of_db_operations(self.database.create_database(), "Database already exists")
-        if not self.tabs:
-            temp = TableView(self.database.tables[0], self.tab_control)
-            self.tabs.append(temp)
-            temp.show()
-
     def create_tab_control(self):
-        self.tab_control = ttk.Notebook(self.root)
-        self.tab_control.pack(expand=1, fill='both')
+        if self.tab_control is None:
+            self.tab_control = ttk.Notebook(self.root)
+            self.tab_control.pack(expand=1, fill='both')
 
     def close_root(self):
         self.database.close_all()
@@ -84,6 +86,12 @@ class GUI:
                 self.main_menu.entryconfig('Create database', state='normal')
                 self.main_menu.entryconfig('Delete database', state='normal')
                 self.main_menu.entryconfig('Truncate all tables', state='normal')
+                self.create_tab_control()
+                if self.database.is_exists:
+                    for i, table in enumerate(self.database.tables):
+                        temp = TableView(table, self.tab_control)
+                        self.table_views.append(temp)
+                        temp.show()
 
         extra_window = Toplevel(self.root)
         extra_window.title('Sign in')

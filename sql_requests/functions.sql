@@ -22,7 +22,7 @@ $$ LANGUAGE plpgsql;
 
 -----------------------------orders--------------------------------
 
-CREATE OR REPLACE FUNCTION get_orders() RETURNS SETOF RECORD AS $$
+CREATE OR REPLACE FUNCTION get_orders() RETURNS SETOF orders AS $$
 BEGIN
 	RETURN QUERY SELECT * FROM orders;
 END;
