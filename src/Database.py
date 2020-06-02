@@ -24,7 +24,7 @@ class Database:
         self.my_user = None
 
         self.tables = []
-        self.create_table()
+        self.create_tables()
         self.is_exists = False
 
     def create_postgres_user(self, username: str, password: str):
@@ -36,6 +36,7 @@ class Database:
             self.cursor = self.conn.cursor()
             return True
         except psycopg2.OperationalError as e:
+            print(e)
             return False
 
     def create_user(self):
@@ -65,6 +66,7 @@ class Database:
     def create_database(self) -> bool:
         try:
             self.change_connection(self.postgres_user.username, self.postgres_user.password)
+            self.create_user()
             self.cursor.execute("SELECT create_database('{}', '{}')".format(self.postgres_user.username,
                                                                             self.postgres_user.password))
             self.conn.commit()
@@ -75,7 +77,6 @@ class Database:
             self.load_sql_function_from_file("..\\sql_requests\\functions.sql")
             self.load_sql_function_from_file("..\\sql_requests\\triggers.sql")
             self.conn.commit()
-            print('SUCCESS')
         except psycopg2.errors.RaiseException as e:
             self.change_connection(self.my_user.username, self.my_user.password, 'orders_db')
             print(e)
@@ -90,7 +91,7 @@ class Database:
         self.cursor.execute("SELECT create_tables()")
         self.conn.commit()
 
-    def create_table(self):
+    def create_tables(self):
         self.tables = [TableWithAddition('consumers', ['id', 'name', 'address'], self),
                     TableWithAddition('suppliers', ['id', 'sername', 'address'], self),
                     Table('details', ['id', 'name', 'storage_address', 'quantity', 'price'],  self),
@@ -99,23 +100,23 @@ class Database:
 
     def drop_database(self) -> bool:
         try:
-            if not self.change_connection(self.postgres_user.username, self.postgres_user.password):
-                print('Подключение провалилось')
+            self.change_connection(self.postgres_user.username, self.postgres_user.password)
+
             self.cursor.execute("SELECT drop_database('{}', '{}')".format(self.postgres_user.username,
                                                                             self.postgres_user.password))
-            print("Удаление прошло успешно")
+            self.cursor.execute("DROP USER IF EXISTS {}".format(self.my_user.username))
+            self.conn.commit()
         except psycopg2.errors.RaiseException as e:
             print(e)
             self.conn.commit()
             return False
-
-        self.conn.commit()
         return True
 
     def truncate_all_tables(self) -> bool:
         if not self.change_connection(self.my_user.username, self.my_user.password, self.my_user.database):
             return False
         self.cursor.execute("SELECT clear_all_tables()")
+        self.conn.commit()
         return True
 
     def close_all(self):
@@ -124,32 +125,15 @@ class Database:
             self.conn.close()
 
     def init_connection(self, username: str, password: str) -> bool:
-        # if self.postgres_user is not None:
-        #     return True
-
         self.create_postgres_user(username, password)
         if not self.connect_to_database(self.postgres_user.username, self.postgres_user.password):
             return False
 
         self.create_user()
         self.upload_function_create_database_to_postgres()
+
         self.cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'orders_db'")
         self.is_exists = True if self.cursor.fetchall() else False
         if self.is_exists:
             self.change_connection(self.my_user.username, self.my_user.password, 'orders_db')
         return True
-    # TODO сделать общие функции для всех таблиц
-
-
-if __name__ == '__main__':
-    db = Database()
-    if not db.init_connection('postgres', 'SQL0!'):
-        exit(1)
-
-    db.create_database()
-    db.drop_database()
-    # if not db.change_connection(db.my_user.username, db.my_user.password, db.my_user.database):
-    #     exit(2)
-
-    # db.load_function_from_file("..\\sql_requests\\create_db_create_tables.sql")
-    db.close_all()

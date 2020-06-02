@@ -1,6 +1,3 @@
-import copy
-
-
 class Table:
     def __init__(self, name, columns: list, database):
         self.name = name
@@ -18,25 +15,22 @@ class Table:
         return result
 
     def clear_table(self):
-        print('Функция очистки: ', "SELECT clear_table('{}')".format(self.name))
         self.database.cursor.execute("SELECT clear_table('{}')".format(self.name))
         result = self.database.cursor.fetchall()
         self.database.conn.commit()
         return result
 
     def insert(self, *args):
-        self.database.cursor.execute("SELECT insert_into_{}{}".format(self.name, *args))  # ({}).format(*args)
+        self.database.cursor.execute("SELECT insert_into_{}{}".format(self.name, *args))
         self.database.conn.commit()
         return self.get_records()
 
     def update_record(self, *args):
-        print('Функция обновления: ', "SELECT update_{}{}".format(self.name, *args))
         self.database.cursor.execute("SELECT update_{}{}".format(self.name, *args))
         self.database.conn.commit()
         return self.get_records()
 
     def delete_record(self, record_id: int):
-        print('Функция удаления: ', "SELECT delete_record_from_table({}, '{}')".format(record_id, self.name))
         self.database.cursor.execute("SELECT delete_record_from_table({}, '{}')".format(record_id, self.name))
         self.database.conn.commit()
         return self.get_records()
@@ -55,4 +49,3 @@ class TableWithAddition(Table):
         self.database.cursor.execute("SELECT delete_from_{}_by_address('{}')".format(self.name, address))
         self.database.conn.commit()
         return self.get_records()
-

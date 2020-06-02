@@ -29,8 +29,9 @@ class GUI:
         self.main_menu = Menu(self.root)
 
         def create_database():
+            if not self.database.create_database():
+                mb.showerror("Create database", "Database already exist")
             self.create_tab_control()
-            self.show_fail_of_db_operations(self.database.create_database(), "Database already exists")
             if not self.table_views:
                 for i, table in enumerate(self.database.tables):
                     temp = TableView(table, self.tab_control)
@@ -40,15 +41,22 @@ class GUI:
         self.main_menu.add_command(label='Create database', state='disabled', command=create_database)
 
         def delete_database():
-            self.database.drop_database()
-            self.tab_control.destroy()
+            if self.database.drop_database():
+                self.tab_control.destroy()
+                self.tab_control = None
+                self.table_views.clear()
+            else:
+                mb.showerror("Delete database", "Database does not exist")
 
         self.main_menu.add_command(label='Delete database', state='disabled', command=delete_database)
 
         def truncate_all():
-            self.database.truncate_all_tables()
-            for table_view in self.table_views:
-                table_view.create_tree_views()
+            if not self.database.truncate_all_tables():
+                mb.showerror("Truncate all tables", "Database does not exist")
+            else:
+                for table_view in self.table_views:
+                    table_view.create_tree_views()
+
         self.main_menu.add_command(label='Truncate all tables', state='disabled',
                                    comman=truncate_all)
 
@@ -57,23 +65,16 @@ class GUI:
                                 command=lambda: self.postgres_authentication())
         self.sign_in_button.pack(anchor=CENTER)
 
-        self.root.protocol('WM_DELETE_WINDOW', lambda:  self.close_root())
+        def close_root():
+            self.database.close_all()
+            self.root.destroy()
+
+        self.root.protocol('WM_DELETE_WINDOW', close_root)
 
     def create_tab_control(self):
         if self.tab_control is None:
             self.tab_control = ttk.Notebook(self.root)
             self.tab_control.pack(expand=1, fill='both')
-
-    def close_root(self):
-        self.database.close_all()
-        self.root.destroy()
-
-    def show_fail_of_db_operations(self, operation, error_message):
-        def wrapper(*args):
-            if not operation(*args):
-                mb.showerror("ERROR", error_message)
-
-        return wrapper
 
     def postgres_authentication(self):
         def check():
@@ -111,7 +112,6 @@ class GUI:
 
         Label(extra_window, text='Password').grid(row=1, column=0)
         password_entry = Entry(extra_window, show='*')
-        password_entry.insert(END, 'SQL0!')
         password_entry.grid(row=1, column=1)
 
         button_sign_in = Button(extra_window, text='Sign in', command=check)

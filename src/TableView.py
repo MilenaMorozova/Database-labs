@@ -2,8 +2,6 @@ from tkinter.ttk import Frame, Treeview
 from tkinter import *
 from enum import Enum
 
-from src.Table import Table, TableWithAddition
-
 
 class TableView:
     def __init__(self, table, table_control):
@@ -35,12 +33,12 @@ class TableView:
 
         self.tree.column('#0', stretch=NO, minwidth=0, width=0)
         for i in range(1, len(self.table.columns)):
-            self.tree.column('#' + str(i), stretch=NO, minwidth=150, width=200)
+            self.tree.column('#' + str(i), stretch=NO, minwidth=60, width=100)
 
         if data is None:
             data = self.table.get_records()
 
-        print("Данные таблицы", self.table.name, ':', data)
+        # print("Данные таблицы", self.table.name, ':', data)
         if data:
             for i in data:
                 self.tree.insert("", 0, values=i)
@@ -55,6 +53,7 @@ class TableView:
 
     def create_extra_window(self, function, columns: list = None, fill_entry=False):
         entry_dict = {}
+
         extra_window = Toplevel(self.tab)
         extra_window.title("Изменение данных файла")
         w = self.tab.winfo_screenwidth()
@@ -76,24 +75,24 @@ class TableView:
             self.fill_entries(entry_dict)
 
         def update_tree():
-            data = function(self.process_data(entry_dict))
+            def process_data() -> tuple:
+                result = []
+                for key in entry_dict:
+                    value = entry_dict[key].get()
+                    if value.isdigit():
+                        result.append(int(value))
+                    else:
+                        result.append(value)
+                if len(result) == 1:
+                    return result[0]
+                return tuple(result)
+
+            data = function(process_data())
             self.create_tree_views(data)
 
         button = Button(extra_window, text="OK", width=40,
                         command=lambda: update_tree())
         button.grid(column=0, row=8, columnspan=3, padx=10, pady=30)
-
-    def process_data(self, entry_dict: dict) -> tuple:
-        result = []
-        for key in entry_dict:
-            value = entry_dict[key].get()
-            if value.isdigit():
-                result.append(int(value))
-            else:
-                result.append(value)
-        if len(result) == 1:
-            return result[0]
-        return tuple(result)
 
     def fill_entries(self, entry_dict: dict):
         for key in entry_dict:
@@ -122,7 +121,7 @@ class TableView:
 
         elif operation == self.Operations.UPDATE:
             if self.table.name == 'orders':
-                self.create_extra_window(self.table.update_record, self.table.columns[-2], True)
+                self.create_extra_window(self.table.update_record, self.table.columns[:-2], True)
             else:
                 self.create_extra_window(self.table.update_record, self.table.columns, True)
 
@@ -136,13 +135,16 @@ class TableView:
             self.create_extra_window(self.table.search_by_address, [self.table.columns[-1]])
 
     def show(self):
-        add_button = Button(self.frame_buttons, text='Add record', command=lambda: self.create_function_window(self.Operations.ADD))
+        add_button = Button(self.frame_buttons, text='Add record',
+                            command=lambda: self.create_function_window(self.Operations.ADD))
         add_button.pack(side=LEFT)
 
-        update_button = Button(self.frame_buttons, text='Update record', command=lambda: self.create_function_window(self.Operations.UPDATE))
+        update_button = Button(self.frame_buttons, text='Update record',
+                               command=lambda: self.create_function_window(self.Operations.UPDATE))
         update_button.pack(side=LEFT)
 
-        delete_by_id_button = Button(self.frame_buttons, text='Delete record by id', command=lambda: self.create_function_window(self.Operations.DELETE_BY_ID))
+        delete_by_id_button = Button(self.frame_buttons, text='Delete record by id',
+                                     command=lambda: self.create_function_window(self.Operations.DELETE_BY_ID))
         delete_by_id_button.pack(side=LEFT)
 
         def truncate():
@@ -154,7 +156,7 @@ class TableView:
 
         delete_by_address_button = Button(self.frame_buttons, text='Delete record by address',
                                           state='disabled' if self.table.__class__.__name__ == "Table" else 'normal',
-                                          command=lambda: self.create_function_window(self.Operations.DELETE_BY_ADDRESS))
+                                        command=lambda: self.create_function_window(self.Operations.DELETE_BY_ADDRESS))
         delete_by_address_button.pack(side=LEFT)
 
         search_by_address_button = Button(self.frame_buttons, text='Search record by address',
